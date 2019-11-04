@@ -1,0 +1,34 @@
+\documentclass[a4paper, 12pt]{article}
+
+\usepackage{amsmath}
+\renewcommand{\contentsname}{Contents}
+\renewcommand{\figurename}{Fig}
+\renewcommand{\tablename}{Table}
+\renewcommand{\partname}{xxx}
+\renewcommand{\thepart}{The \arabic{part}}
+\renewcommand{\listfigurename}{Figures}
+\renewcommand{\listtablename}{Tables}
+\renewcommand{\refname}{Refs}
+\renewcommand{\appendixname}{Appendix}
+\renewcommand{\indexname}{Indexing}
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+
+\title{Test}
+\author{Zhipeng Zou}
+\begin{document}
+  \tableofcontents
+  \maketitle
+
+  \part{}
+
+  \section{One}
+  This is a equation: $\mathbf{A} \times \mathbf{B}$
+
+  This is block one: 
+
+  $$
+  \sum_{i=1}^n y^i\log \hat{y}^i
+  $$
+
+  As this is a inline equation $\sigma(x) = \frac{1}{1 + e^{-x}}$, so that, we can reproduce this problem.
+\end{document}
