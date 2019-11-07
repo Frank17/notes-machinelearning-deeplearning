@@ -202,5 +202,89 @@ $$
   \left(\begin{array}{cccc}{0.5} & {0.5} & {2} & {2} \\ {0.5} & {0.5} & {2} & {2} \\ {1} & {1} & {1.5} & {1.5} \\ {1} & {1} & {1.5} & {1.5}\end{array}\right)
 $$
 
+根据反向传播的关系$\delta ^{[l]} = \nabla _{\mathbf{A}^{[l]}} J \odot \sigma' \left(\mathbf{Z}^{[l]}\right)$，则有
+$$
+\nabla _{\mathbf{A}^{[l]}} J = \frac{\partial J}{\partial \mathbf{A}^{[l]}} = \frac{\partial J}{\partial \mathbf{Z}^{[l + 1]}} \cdot \frac{\partial \mathbf{Z}^{[l + 1]}}{\partial \mathbf{A}^{[l]}} = \delta ^{[l + 1]} \cdot \frac{\partial \mathbf{Z}^{[l + 1]}}{\partial \mathbf{A}^{[l]}}
+$$
+不同的是，由于在池化层中，$\mathbf{Z}^{[l + 1]}$与${\partial \mathbf{A}^{[l]}}$的关系为一个池化过程，从$l$至$l+1$层时，产生了维度缩减，而池化层无待学参数，因此反向传播仅需将误差扩增到原始维度。因此$\frac{\partial \mathbf{Z}^{[l + 1]}}{\partial \mathbf{A}^{[l]}}$表示的应是对下一层的误差进行去池化，即$\delta ^{[l]} = \operatorname{unsample} \left(\delta ^{[l+1]}\right)\cdot \sigma' \left(\mathbf{Z}^{[l]}\right)$. 
 
+\paragraph{4) 卷积层至上一层（池化层）:}
+为推导反向传播过程，应先观察正向传播的过程，其计算如图\ref{fig:conv-fp}：
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=.8\textwidth]{figures/convolutional-fp.pdf}
+  \caption{卷积层正向传播}
+  \label{fig:conv-fp}
+\end{figure}
+其计算结果可表示为：
+$$
+\begin{aligned}
+  \mathbf{O}_{1,1} &= \mathbf{X}_{1,1}\mathbf{F}_{1,1} + \mathbf{X}_{1,2}\mathbf{F}_{1,2} + \mathbf{X}_{2,1}\mathbf{F}_{2,1} + \mathbf{X}_{2,2}\mathbf{F}_{2,2} \\
+  \mathbf{O}_{1,2} &= \mathbf{X}_{1,2}\mathbf{F}_{1,1} + \mathbf{X}_{1,3}\mathbf{F}_{1,2} + \mathbf{X}_{2,2}\mathbf{F}_{2,1} + \mathbf{X}_{2,3}\mathbf{F}_{2,2} \\
+  \mathbf{O}_{2,1} &= \mathbf{X}_{2,1}\mathbf{F}_{1,1} + \mathbf{X}_{2,2}\mathbf{F}_{1,2} + \mathbf{X}_{3,1}\mathbf{F}_{2,1} + \mathbf{X}_{3,2}\mathbf{F}_{2,2} \\
+  \mathbf{O}_{2,2} &= \mathbf{X}_{2,2}\mathbf{F}_{1,1} + \mathbf{X}_{2,3}\mathbf{F}_{1,2} + \mathbf{X}_{3,2}\mathbf{F}_{2,1} + \mathbf{X}_{3,3}\mathbf{F}_{2,2} \\
+\end{aligned}
+$$
+根据反向传播公式$\delta ^{[l]} = \nabla _{\mathbf{A}^{[l]}} J \odot \sigma' \left(\mathbf{Z}^{[l]}\right)$，进一步推导，对于$\nabla _{\mathbf{A}^{[l]}} J = \frac{\partial J}{\partial \mathbf{A}^{[l]}}$，则有
+$$
+\frac{\partial J}{\partial \mathbf{A}^{[l]}} = \frac{\partial J}{\partial \mathbf{Z}^{[l + 1]}} \cdot \frac{\partial \mathbf{Z}^{[l + 1]}}{\partial \mathbf{A}^{[l]}}
+$$
+根据前向传播结果，$\mathbf{A}^{[l]}$经过卷积运算，得到$\mathbf{Z}^{[l + 1]}$，因此对上述前向传播的过程进行微分，$2\times 2$的输出，将被还原为$3 \times 3$，并有
+$$
+\begin{aligned}
+  \nabla_{\mathbf{X}_{1,1}} &= \frac{\partial \mathbf{O}_{1,1}}{\partial \mathbf{X}_{1,1}} = \frac{\partial}{\partial \mathbf{X}_{1,1}} \left( \mathbf{X}_{1,1}\mathbf{F}_{1,1} + \mathbf{X}_{1,2}\mathbf{F}_{1,2} + \mathbf{X}_{2,1}\mathbf{F}_{2,1} + \mathbf{X}_{2,2}\mathbf{F}_{2,2} \right) = \mathbf{F}_{1,1} \\
+  \nabla_{\mathbf{X}_{1,2}} &= \frac{\partial \mathbf{O}_{1,1}}{\partial \mathbf{X}_{1,1}} + \frac{\partial \mathbf{O}_{1,2}}{\partial \mathbf{X}_{1,2}} = \mathbf{F}_{1,1} + \mathbf{F}_{1,2} \\ 
+  \nabla_{\mathbf{X}_{1,3}} &= \frac{\partial \mathbf{O}_{1,2}}{\partial \mathbf{X}_{1,3}} = \mathbf{F}_{1,2} \\
+  \nabla_{\mathbf{X}_{2,1}} &= \frac{\partial \mathbf{O}_{1,1}}{\partial \mathbf{X}_{2,1}} + \frac{\partial \mathbf{O}_{2,1}}{\partial \mathbf{X}_{2,1}} = \mathbf{F}_{2,1} + \mathbf{F}_{1,1} \\ 
+  \nabla_{\mathbf{X}_{2,2}} &= \frac{\partial \mathbf{O}_{1,1}}{\partial \mathbf{X}_{2,2}} + \frac{\partial \mathbf{O}_{1,2}}{\partial \mathbf{X}_{2,2}} + \frac{\partial \mathbf{O}_{2,1}}{\partial \mathbf{X}_{2,2}} + \frac{\partial \mathbf{O}_{2,2}}{\partial \mathbf{X}_{2,2}} = \mathbf{F}_{1,1} + \mathbf{F}_{1,2} + \mathbf{F}_{2,1} + \mathbf{F}_{2,2} \\
+  \nabla_{\mathbf{X}_{2,3}} &= \frac{\partial \mathbf{O}_{1,2}}{\partial \mathbf{X}_{2,3}} + \frac{\partial \mathbf{O}_{2,2}}{\partial \mathbf{X}_{2,3}} = \mathbf{F}_{1,2} + \mathbf{F}_{2,2} \\
+  \nabla_{\mathbf{X}_{3,1}} &= \frac{\partial \mathbf{O}_{1,2}}{\partial \mathbf{X}_{3,1}} = \mathbf{F}_{2,1} \\
+  \nabla_{\mathbf{X}_{3,2}} &= \frac{\partial \mathbf{O}_{2,1}}{\partial \mathbf{X}_{3,2}} + \frac{\partial \mathbf{O}_{2,2}}{\partial \mathbf{X}_{3,2}} = \mathbf{F}_{2,1} + \mathbf{F}_{2,2} \\
+  \nabla_{\mathbf{X}_{3,3}} &= \frac{\partial \mathbf{O}_{2,2}}{\partial \mathbf{X}_{3,3}} = \mathbf{F}_{2,2} \\
+\end{aligned}
+$$
+
+则根据上式，可将反向传播过程视为如下运算：
+$$
+\begin{aligned}
+  &\left(
+  \begin{array}{cccc}
+    0 & 0 & 0 & 0 \\ 
+    0 & \delta^{[l+1]}_{1,1} & \delta^{[l+1]}_{1,2} & 0 \\
+    0 & \delta^{[l+1]}_{2,1} & \delta^{[l+1]}_{2,2} & 0 \\
+    0 & 0 & 0 & 0 \\
+  \end{array}
+\right) \odot \left(
+  \begin{array}{cc}
+    \mathbf{F_{2,2}} & \mathbf{F_{2,1}} \\
+    \mathbf{F_{1,2}} & \mathbf{F_{1,1}}
+  \end{array}
+\right) \\ 
+&= \left(
+  \begin{array}{ccc}
+    \delta^{[l+1]}_{1,1} \mathbf{F_{1,1}} & \delta^{[l+1]}_{1,1} \mathbf{F_{2,1}} + \delta^{[l+1]}_{1,2} \mathbf{F_{1,1}} & \mathbf{F_{1,2}} \\ 
+    \delta^{[l+1]}_{1,2} \mathbf{F_{2,1}} + \theta^{[l+1]}_{2,2} \mathbf{F_{1,1}} & \mathbf{\delta}^{[l+1]}\odot \mathbf{F} & \delta^{[l+1]}_{1,1} \mathbf{F_{2,2}} + \delta^{[l+1]}_{2,1} \mathbf{F_{1,2}} \\ 
+    \delta^{[l+1]}_{2,1} \mathbf{F_{2,1}} & \delta^{[l+1]}_{2,1} \mathbf{F_{2,2}} + \delta^{[l+1]}_{2,2} \mathbf{F_{2,1}} & \delta^{[l+1]}_{2,2} \mathbf{F_{2,2}}
+  \end{array}
+\right)
+\end{aligned}
+$$
+其总结即可为$\delta ^{[l]} = \delta^{[l+1]}\odot k_{rot180} \left(\mathbf{F}^{l+1}\right) \odot \sigma ' \left(Z^{[l]}\right)$. 由上可知，在卷积层进行BP时，同样需要将误差再经过一层padding，再将卷积层的参数旋转180度后进行卷积，最终可得梯度。设在卷积层采用$f \times f$的卷积核，$stride$为步长，no-padding方式进行卷积，其输入为$n_H \times n_C$，则其输出的大小为：$n_H' = \left\lfloor \frac{n_H - f}{stride} + 1 \right \rfloor, n_W' = \left\lfloor \frac{n_W - f}{stride} + 1 \right \rfloor$，则输出为$n_H' \times n_W'$. 则在BP过程中，需要将误差由$n_H' \times n_W'$还原至$n_H \times n_W$，则需要采用padding，设padding值为$pad$，则有
+$$
+\begin{aligned}
+  &n_H = \frac{n_H' + 2pad - f}{stride} + 1 \\ 
+  &stride(n_H - 1) + f - 2pad = n_H' \\ 
+  & stride(n_H - 1) + f - 2pad = \frac{n_H - f}{stride} + 1 \\ 
+  & \frac{1}{2} \left(stride(n_H - 1) + f - 1 - n_H'\right) = pad
+\end{aligned}
+$$
+则$pad=\frac{1}{2} \left(stride(n_H - 1) + f - 1 - n_H'\right)$即为padding大小。
+
+根据$\delta ^{[l]}$可推出参数梯度：
+$$
+\begin{aligned}
+  \frac{\partial J}{\partial \mathbf{W}{[l]}} = \delta ^{[l]}\odot\sigma '\left(\mathbf{Z}^{[l]}\right) \\
+\end{aligned}
+$$
+·
 \section{循环神经网络}

@@ -4,6 +4,9 @@
 # vscode configuration
 .vscode/**
 
+englishtest.pdf
+englishtest.tex
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
